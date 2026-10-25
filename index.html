@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Симулятор функцій Уолша</title>
-    <!-- ПРАВИЛЬНЕ ПІДКЛЮЧЕННЯ БІБЛІОТЕКИ CHART.JS -->
-    <script src="https://jsdelivr.net"></script>
     <style>
         body { font-family: sans-serif; background: #f4f6f9; color: #333; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { max-width: 700px; width: 100%; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); box-sizing: border-box; }
@@ -14,7 +12,9 @@
         .control-group { display: flex; align-items: center; justify-content: space-between; }
         label { font-weight: bold; }
         input[type="range"] { width: 60%; }
-        .val-display { font-weight: bold; color: #007bff; width: 30px; text-align: right; }
+        .val-display { font-weight: bold; color: #007bff; width: 40px; text-align: right; }
+        .canvas-container { width: 100%; position: relative; margin-top: 10px; }
+        canvas { width: 100%; background: #ffffff; border: 1px solid #ddd; border-radius: 4px; display: block; }
     </style>
 </head>
 <body>
@@ -35,16 +35,17 @@
         </div>
     </div>
 
-    <canvas id="walshChart"></canvas>
+    <div class="canvas-container">
+        <canvas id="walshCanvas" width="660" height="350"></canvas>
+    </div>
 </div>
 
 <script>
-    // Функція генерації матриці Адамара (впорядкованої за Уолшем / за частотою змін знаку)
+    // Функция генерации вектора Уолша (sequency ordering через код Грея)
     function generateWalshVector(N, k) {
         let walsh = new Array(N).fill(1);
         for (let i = 0; i < N; i++) {
             let val = 0;
-            // Переклад в код Грея для отримання саме функцій Уолша (sequency ordering)
             let gray = k ^ (k >> 1); 
             for (let j = 0; j < 32; j++) {
                 if ((gray >> j) & 1) {
@@ -58,77 +59,148 @@
         return walsh;
     }
 
-    // Ініціалізація змінних
     const orderInput = document.getElementById('orderInput');
     const indexInput = document.getElementById('indexInput');
     const orderVal = document.getElementById('orderVal');
     const indexVal = document.getElementById('indexVal');
-    const ctx = document.getElementById('walshChart').getContext('2d');
-    
-    let chart;
+    const canvas = document.getElementById('walshCanvas');
+    const ctx = canvas.getContext('2d');
 
-    function updateChart() {
+    function drawChart() {
         const p = parseInt(orderInput.value);
-        const N = Math.pow(2, p); // Довжина сигналу (4, 8, 16, 32, 64)
+        const N = Math.pow(2, p);
         
-        // Коригуємо макс. індекс під обрану довжину
         indexInput.max = N - 1;
         let k = parseInt(indexInput.value);
         if (k >= N) { k = N - 1; indexInput.value = k; }
 
-        // Оновлюємо текст
         orderVal.textContent = N;
         indexVal.textContent = k;
 
-        const walshData = generateWalshVector(N, k);
-        
-        // Формуємо масив точок для сходинкового (stepped) графіка
-        const labels = [];
-        const dataPoints = [];
-        for(let i = 0; i < N; i++) {
-            labels.push(i.toString());
-            dataPoints.push(walshData[i]);
-        }
-        // Додаємо фінальну точку для візуального закриття графіка
-        labels.push(N.toString());
-        dataPoints.push(walshData[N-1]);
+        const data = generateWalshVector(N, k);
 
-        if (chart) { chart.destroy(); }
+        // Очистка холста
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: `Walsh(k=${k}, N=${N})`,
-                    data: dataPoints,
-                    borderColor: '#007bff',
-                    borderWidth: 3,
-                    stepped: true, // Вмикаємо прямокутну форму сигналу
-                    fill: false,
-                    pointRadius: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { min: -1.5, max: 1.5, ticks: { stepSize: 1 } },
-                    x: { title: { display: true, text: 'Дискретний час (n)' } }
-                }
+        // Отступы
+        const paddingLeft = 50;
+        const paddingRight = 30;
+        const paddingTop = 40;
+        const paddingBottom = 50;
+
+        const chartWidth = canvas.width - paddingLeft - paddingRight;
+        const chartHeight = canvas.height - paddingTop - paddingBottom;
+
+        const centerY = paddingTop + chartHeight / 2;
+        const scaleY = chartHeight / 2.5; // Масштаб для значений 1 и -1
+
+        // 1. Рисуем сетку координат и оси
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+
+        // Линия для +1
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, centerY - scaleY);
+        ctx.lineTo(canvas.width - paddingRight, centerY - scaleY);
+        ctx.stroke();
+
+        // Осевая линия (0)
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, centerY);
+        ctx.lineTo(canvas.width - paddingRight, centerY);
+        ctx.stroke();
+
+        // Линия для -1
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, centerY + scaleY);
+        ctx.lineTo(canvas.width - paddingRight, centerY + scaleY);
+        ctx.stroke();
+
+        // Подписи оси Y
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('1.0', paddingLeft - 10, centerY - scaleY);
+        ctx.fillText('0.0', paddingLeft - 10, centerY);
+        ctx.fillText('-1.0', paddingLeft - 10, centerY + scaleY);
+
+        // Название графика сверху
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Walsh (k = ${k}, N = ${N})`, canvas.width / 2, paddingTop - 15);
+
+        // Подпись оси X снизу
+        ctx.font = '13px sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText('Дискретний час (n)', canvas.width / 2, canvas.height - 15);
+
+        // 2. Построение ступенчатого графика функции Уолша
+        const stepWidth = chartWidth / N;
+
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'miter';
+        ctx.beginPath();
+
+        // Стартовая точка графика
+        let startY = centerY - (data[0] * scaleY);
+        ctx.moveTo(paddingLeft, startY);
+
+        for (let i = 0; i < N; i++) {
+            const currentX = paddingLeft + (i * stepWidth);
+            const nextX = paddingLeft + ((i + 1) * stepWidth);
+            const targetY = centerY - (data[i] * scaleY);
+
+            // Вертикальная ступенька (если уровень сигнала изменился)
+            ctx.lineTo(currentX, targetY);
+            // Горизонтальная линия текущего интервала
+            ctx.lineTo(nextX, targetY);
+
+            // Метки делений на оси X (чтобы не загромождать, пишем выборочно для больших N)
+            if (N <= 16 || i % (N / 8) === 0 || i === N - 1) {
+                ctx.save();
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(currentX, centerY);
+                ctx.lineTo(currentX, centerY + 5);
+                ctx.stroke();
+
+                ctx.fillStyle = '#64748b';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(i.toString(), currentX, centerY + 20);
+                ctx.restore();
             }
-        });
+        }
+        
+        // Рисуем последнюю засечку на конце оси X
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft + chartWidth, centerY);
+        ctx.lineTo(paddingLeft + chartWidth, centerY + 5);
+        ctx.stroke();
+        ctx.fillText(N.toString(), paddingLeft + chartWidth, centerY + 20);
+
+        ctx.stroke();
     }
 
-    // Слухачі подій для повзунків
-    orderInput.addEventListener('input', updateChart);
-    indexInput.addEventListener('input', updateChart);
+    orderInput.addEventListener('input', drawChart);
+    indexInput.addEventListener('input', drawChart);
 
-    // Перший запуск
-    updateChart();
+    // Первичная отрисовка
+    drawChart();
 </script>
 
 </body>
-    </html>
+</html>
+
 
 
         
