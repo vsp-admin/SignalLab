@@ -41,7 +41,7 @@
 </div>
 
 <script>
-    // Функция генерации вектора Уолша (sequency ordering через код Грея)
+    // Функція генерації вектора Уолша (sequency ordering через код Грея)
     function generateWalshVector(N, k) {
         let walsh = new Array(N).fill(1);
         for (let i = 0; i < N; i++) {
@@ -79,10 +79,10 @@
 
         const data = generateWalshVector(N, k);
 
-        // Очистка холста
+        // Очищення полотна
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Отступы
+        // Відступи
         const paddingLeft = 50;
         const paddingRight = 30;
         const paddingTop = 40;
@@ -92,19 +92,19 @@
         const chartHeight = canvas.height - paddingTop - paddingBottom;
 
         const centerY = paddingTop + chartHeight / 2;
-        const scaleY = chartHeight / 2.5; // Масштаб для значений 1 и -1
+        const scaleY = chartHeight / 2.5; // Масштаб для значень 1 та -1
 
-        // 1. Рисуем сетку координат и оси
+        // 1. Малюємо сітку координат та осі
         ctx.strokeStyle = '#e2e8f0';
         ctx.lineWidth = 1;
 
-        // Линия для +1
+        // Лінія для +1
         ctx.beginPath();
         ctx.moveTo(paddingLeft, centerY - scaleY);
         ctx.lineTo(canvas.width - paddingRight, centerY - scaleY);
         ctx.stroke();
 
-        // Осевая линия (0)
+        // Осьова лінія (0)
         ctx.strokeStyle = '#cbd5e1';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -112,7 +112,7 @@
         ctx.lineTo(canvas.width - paddingRight, centerY);
         ctx.stroke();
 
-        // Линия для -1
+        // Лінія для -1
         ctx.strokeStyle = '#e2e8f0';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -120,7 +120,7 @@
         ctx.lineTo(canvas.width - paddingRight, centerY + scaleY);
         ctx.stroke();
 
-        // Подписи оси Y
+        // Підписи осі Y
         ctx.font = '14px sans-serif';
         ctx.fillStyle = '#64748b';
         ctx.textAlign = 'right';
@@ -129,18 +129,18 @@
         ctx.fillText('0.0', paddingLeft - 10, centerY);
         ctx.fillText('-1.0', paddingLeft - 10, centerY + scaleY);
 
-        // Название графика сверху
+        // Назва графіка зверху
         ctx.fillStyle = '#1e293b';
         ctx.font = 'bold 15px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(`Walsh (k = ${k}, N = ${N})`, canvas.width / 2, paddingTop - 15);
 
-        // Подпись оси X снизу
+        // Підпис осі X знизу
         ctx.font = '13px sans-serif';
         ctx.fillStyle = '#64748b';
         ctx.fillText('Дискретний час (n)', canvas.width / 2, canvas.height - 15);
 
-        // 2. Построение ступенчатого графика функции Уолша
+        // 2. Побудова сходинкового графіка функції Уолша
         const stepWidth = chartWidth / N;
 
         ctx.strokeStyle = '#007bff';
@@ -148,7 +148,7 @@
         ctx.lineJoin = 'miter';
         ctx.beginPath();
 
-        // Стартовая точка графика
+        // Стартова точка графіка (ВИПРАВЛЕНО ТУТ: беремо саме перший елемент масиву data[0])
         let startY = centerY - (data[0] * scaleY);
         ctx.moveTo(paddingLeft, startY);
 
@@ -157,12 +157,12 @@
             const nextX = paddingLeft + ((i + 1) * stepWidth);
             const targetY = centerY - (data[i] * scaleY);
 
-            // Вертикальная ступенька (если уровень сигнала изменился)
+            // Вертикальна сходинка (якщо рівень сигналу змінився)
             ctx.lineTo(currentX, targetY);
-            // Горизонтальная линия текущего интервала
+            // Горизонтальна лінія поточного інтервалу
             ctx.lineTo(nextX, targetY);
 
-            // Метки делений на оси X (чтобы не загромождать, пишем выборочно для больших N)
+            // Мітки поділок на осі X
             if (N <= 16 || i % (N / 8) === 0 || i === N - 1) {
                 ctx.save();
                 ctx.strokeStyle = '#cbd5e1';
@@ -180,7 +180,7 @@
             }
         }
         
-        // Рисуем последнюю засечку на конце оси X
+        // Малюємо останню насічку на кінці осі X
         ctx.strokeStyle = '#cbd5e1';
         ctx.beginPath();
         ctx.moveTo(paddingLeft + chartWidth, centerY);
@@ -194,13 +194,12 @@
     orderInput.addEventListener('input', drawChart);
     indexInput.addEventListener('input', drawChart);
 
-    // Первичная отрисовка
+    // Первинне малювання
     drawChart();
 </script>
 
 </body>
 </html>
-
 
 
         
