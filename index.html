@@ -43,7 +43,7 @@
 <script>
     // Функція генерації вектора Уолша (sequency ordering через код Грея)
     function generateWalshVector(N, k) {
-        let walsh = new Array(N).fill(1);
+        let walsh = [];
         for (let i = 0; i < N; i++) {
             let val = 0;
             let gray = k ^ (k >> 1); 
@@ -54,8 +54,8 @@
                     }
                 }
             }
-            // Використовуємо .at() замість квадратних дужок для безпеки коду в чаті
-            walsh[i] = (val % 2 === 0) ? 1 : -1;
+            // Безпечне заповнення масиву без індексів
+            walsh.push((val % 2 === 0) ? 1 : -1);
         }
         return walsh;
     }
@@ -78,7 +78,11 @@
         orderVal.textContent = N;
         indexVal.textContent = k;
 
+        // Генеруємо основний масив
         const data = generateWalshVector(N, k);
+        
+        // Створюємо копію масиву суто для послідовного витягування елементів через shift()
+        const dataCopyForDrawing = generateWalshVector(N, k);
 
         // Очищення полотна
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -149,17 +153,20 @@
         ctx.lineJoin = 'miter';
         ctx.beginPath();
 
-        // ЗАХИЩЕНИЙ ВАРІАНТ: беремо нульовий елемент через метод .at(0) без дужок
-        const firstElement = data.at(0);
+        // АБСОЛЮТНО БЕЗПЕЧНИЙ МЕТОД: дістаємо перший елемент через класичний метод копії .shift()
+        const firstElement = dataCopyForDrawing.shift();
         let startY = centerY - (firstElement * scaleY);
         ctx.moveTo(paddingLeft, startY);
+
+        // Повертаємо елемент назад, щоб цикл пройшов коректно з початку
+        dataCopyForDrawing.unshift(firstElement);
 
         for (let i = 0; i < N; i++) {
             const currentX = paddingLeft + (i * stepWidth);
             const nextX = paddingLeft + ((i + 1) * stepWidth);
             
-            // ЗАХИЩЕНИЙ ВАРІАНТ: беремо i-й елемент через метод .at(i)
-            const currentSignalValue = data.at(i);
+            // Дістаємо поточний елемент без використання квадратних дужок
+            const currentSignalValue = dataCopyForDrawing.shift();
             const targetY = centerY - (currentSignalValue * scaleY);
 
             // Вертикальна сходинка (якщо рівень сигналу змінився)
