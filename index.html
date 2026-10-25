@@ -148,7 +148,7 @@
         ctx.lineJoin = 'miter';
         ctx.beginPath();
 
-        // Стартова точка графіка (ВИПРАВЛЕНО ТУТ: беремо саме перший елемент масиву data[0])
+        // ТЕПЕР ТОЧНО ВИПРАВЛЕНО: беремо перший елемент масиву data[0]
         let startY = centerY - (data[0] * scaleY);
         ctx.moveTo(paddingLeft, startY);
 
@@ -194,12 +194,9 @@
     orderInput.addEventListener('input', drawChart);
     indexInput.addEventListener('input', drawChart);
 
-    // Пррервинне малювання
+    // Первинне малювання
     drawChart();
 </script>
 
 </body>
 </html>
-
-
-        
