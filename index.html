@@ -11,7 +11,7 @@
         .controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
         .control-group { display: flex; align-items: center; justify-content: space-between; }
         label { font-weight: bold; }
-        input[type="range"] { width: 60%; }
+        .control-group input { width: 60%; }
         .val-display { font-weight: bold; color: #007bff; width: 40px; text-align: right; }
         .canvas-container { width: 100%; position: relative; margin-top: 10px; }
         canvas { width: 100%; background: #ffffff; border: 1px solid #ddd; border-radius: 4px; display: block; }
@@ -41,9 +41,9 @@
 </div>
 
 <script>
-    // Чиста генерація масиву без використання системних символів
+    // Генерація масиву через безпечний метод push (без квадратних дужок)
     function generateWalshVector(N, k) {
-        let walsh = [];
+        let walsh = new Array();
         for (let i = 0; i < N; i++) {
             let val = 0;
             let gray = k ^ (k >> 1); 
@@ -94,7 +94,7 @@
         const scaleY = chartHeight / 2.5; 
 
         // ==========================================
-        // 1. МАЛЮЄМО СІТКУ ТА ОСІ (ЧИСТІ ШЛЯХИ)
+        // 1. МАЛЮЄМО КООРДИНАТНУ СІТКУ
         // ==========================================
         ctx.strokeStyle = '#e2e8f0';
         ctx.lineWidth = 1;
@@ -120,7 +120,7 @@
         ctx.stroke();
 
         // ==========================================
-        // 2. ПОБУДОВА ГРАФІКА СИГНАЛУ (ІЗОЛЬОВАНИЙ ШЛЯХ)
+        // 2. БЕЗПЕЧНА ПОБУДОВА СИНЬОЇ ЛІНІЇ СИГНАЛУ
         // ==========================================
         const stepWidth = chartWidth / N;
 
@@ -129,22 +129,23 @@
         ctx.lineJoin = 'miter';
         ctx.beginPath();
 
-        // Початкова точка графіка
-        let firstSignal = data[0];
+        // Знаходимо першу точку без використання дужок [0]
+        const firstSignal = data.find(function() { return true; });
         ctx.moveTo(paddingLeft, centerY - (firstSignal * scaleY));
 
-        for (let i = 0; i < N; i++) {
-            const currentX = paddingLeft + (i * stepWidth);
-            const nextX = paddingLeft + ((i + 1) * stepWidth);
-            const targetY = centerY - (data[i] * scaleY);
+        // Будуємо графік через функцію перебору, де значення signalValue дістається автоматично
+        data.forEach(function(signalValue, indexX) {
+            const currentX = paddingLeft + (indexX * stepWidth);
+            const nextX = paddingLeft + ((indexX + 1) * stepWidth);
+            const targetY = centerY - (signalValue * scaleY);
 
             ctx.lineTo(currentX, targetY);
             ctx.lineTo(nextX, targetY);
-        }
-        ctx.stroke(); // ТУТ ми закрили і намалювали синю лінію без завад!
+        });
+        ctx.stroke(); 
 
         // ==========================================
-        // 3. НАНЕСЕННЯ ТЕКСТУ ТА ЗАСІЧОК (ОКРЕМІ ОПЕРАЦІЇ)
+        // 3. НАНЕСЕННЯ ТЕКСТУ ТА РІВНОМІРНИХ МІТОК ОСІ X
         // ==========================================
         ctx.font = '14px sans-serif';
         ctx.fillStyle = '#64748b';
@@ -163,43 +164,33 @@
         ctx.fillStyle = '#64748b';
         ctx.fillText('Дискретний час (n)', canvas.width / 2, canvas.height - 15);
 
-        // Насічки та цифри для осі X
+        // Малюємо рівно 5 чистих позначок контролю, які ніколи не перекриються цифрами
         ctx.strokeStyle = '#cbd5e1';
         ctx.lineWidth = 1;
         ctx.font = '11px sans-serif';
         ctx.fillStyle = '#64748b';
-
-        for (let i = 0; i < N; i++) {
-            // Малюємо цифри вибірково, щоб не наповзали одна на одну
-            if (N <= 16 || i % (N / 8) === 0) {
-                const currentX = paddingLeft + (i * stepWidth);
-                
-                ctx.beginPath();
-                ctx.moveTo(currentX, centerY);
-                ctx.lineTo(currentX, centerY + 5);
-                ctx.stroke();
-
-                ctx.textAlign = 'center';
-                ctx.fillText(i.toString(), currentX, centerY + 20);
-            }
-        }
-        
-        // Остання насічка для значення N (фінал осі)
-        const finalX = paddingLeft + chartWidth;
-        ctx.beginPath();
-        ctx.moveTo(finalX, centerY);
-        ctx.lineTo(finalX, centerY + 5);
-        ctx.stroke();
         ctx.textAlign = 'center';
-        ctx.fillText(N.toString(), finalX, centerY + 20);
+
+        const labelsX = Array.of(0, N / 4, N / 2, (3 * N) / 4, N);
+        labelsX.forEach(function(labelValue) {
+            const currentX = paddingLeft + (labelValue * stepWidth);
+            
+            ctx.beginPath();
+            ctx.moveTo(currentX, centerY);
+            ctx.lineTo(currentX, centerY + 5);
+            ctx.stroke();
+
+            ctx.fillText(labelValue.toString(), currentX, centerY + 20);
+        });
     }
 
     orderInput.addEventListener('input', drawChart);
     indexInput.addEventListener('input', drawChart);
 
-    // Перший запуск малювання
+    // Старт симулятора
     drawChart();
 </script>
 
 </body>
-</html>
+    </html>
+    
