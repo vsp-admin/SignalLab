@@ -54,6 +54,7 @@
                     }
                 }
             }
+            // Використовуємо .at() замість квадратних дужок для безпеки коду в чаті
             walsh[i] = (val % 2 === 0) ? 1 : -1;
         }
         return walsh;
@@ -148,14 +149,18 @@
         ctx.lineJoin = 'miter';
         ctx.beginPath();
 
-        // ТЕПЕР ОСТАТОЧНО З: Беремо перший елемент масиву даних
-        let startY = centerY - (data[0] * scaleY);
+        // ЗАХИЩЕНИЙ ВАРІАНТ: беремо нульовий елемент через метод .at(0) без дужок
+        const firstElement = data.at(0);
+        let startY = centerY - (firstElement * scaleY);
         ctx.moveTo(paddingLeft, startY);
 
         for (let i = 0; i < N; i++) {
             const currentX = paddingLeft + (i * stepWidth);
             const nextX = paddingLeft + ((i + 1) * stepWidth);
-            const targetY = centerY - (data[i] * scaleY);
+            
+            // ЗАХИЩЕНИЙ ВАРІАНТ: беремо i-й елемент через метод .at(i)
+            const currentSignalValue = data.at(i);
+            const targetY = centerY - (currentSignalValue * scaleY);
 
             // Вертикальна сходинка (якщо рівень сигналу змінився)
             ctx.lineTo(currentX, targetY);
@@ -199,5 +204,4 @@
 </script>
 
 </body>
-    </html>
-    
+</html>
