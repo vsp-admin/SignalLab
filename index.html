@@ -41,7 +41,7 @@
 </div>
 
 <script>
-    // Функція генерації вектора Уолша (sequency ordering через код Грея)
+    // Чиста генерація масиву без використання системних символів
     function generateWalshVector(N, k) {
         let walsh = [];
         for (let i = 0; i < N; i++) {
@@ -54,7 +54,6 @@
                     }
                 }
             }
-            // Безпечне заповнення масиву без індексів
             walsh.push((val % 2 === 0) ? 1 : -1);
         }
         return walsh;
@@ -78,16 +77,11 @@
         orderVal.textContent = N;
         indexVal.textContent = k;
 
-        // Генеруємо основний масив
         const data = generateWalshVector(N, k);
-        
-        // Створюємо копію масиву суто для послідовного витягування елементів через shift()
-        const dataCopyForDrawing = generateWalshVector(N, k);
 
         // Очищення полотна
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Відступи
         const paddingLeft = 50;
         const paddingRight = 30;
         const paddingTop = 40;
@@ -97,19 +91,27 @@
         const chartHeight = canvas.height - paddingTop - paddingBottom;
 
         const centerY = paddingTop + chartHeight / 2;
-        const scaleY = chartHeight / 2.5; // Масштаб для значень 1 та -1
+        const scaleY = chartHeight / 2.5; 
 
-        // 1. Малюємо сітку координат та осі
+        // ==========================================
+        // 1. МАЛЮЄМО СІТКУ ТА ОСІ (ЧИСТІ ШЛЯХИ)
+        // ==========================================
         ctx.strokeStyle = '#e2e8f0';
         ctx.lineWidth = 1;
 
-        // Лінія для +1
+        // Лінія +1
         ctx.beginPath();
         ctx.moveTo(paddingLeft, centerY - scaleY);
         ctx.lineTo(canvas.width - paddingRight, centerY - scaleY);
         ctx.stroke();
 
-        // Осьова лінія (0)
+        // Лінія -1
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, centerY + scaleY);
+        ctx.lineTo(canvas.width - paddingRight, centerY + scaleY);
+        ctx.stroke();
+
+        // Центральна вісь 0
         ctx.strokeStyle = '#cbd5e1';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -117,15 +119,33 @@
         ctx.lineTo(canvas.width - paddingRight, centerY);
         ctx.stroke();
 
-        // Лінія для -1
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(paddingLeft, centerY + scaleY);
-        ctx.lineTo(canvas.width - paddingRight, centerY + scaleY);
-        ctx.stroke();
+        // ==========================================
+        // 2. ПОБУДОВА ГРАФІКА СИГНАЛУ (ІЗОЛЬОВАНИЙ ШЛЯХ)
+        // ==========================================
+        const stepWidth = chartWidth / N;
 
-        // Підписи осі Y
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'miter';
+        ctx.beginPath();
+
+        // Початкова точка графіка
+        let firstSignal = data[0];
+        ctx.moveTo(paddingLeft, centerY - (firstSignal * scaleY));
+
+        for (let i = 0; i < N; i++) {
+            const currentX = paddingLeft + (i * stepWidth);
+            const nextX = paddingLeft + ((i + 1) * stepWidth);
+            const targetY = centerY - (data[i] * scaleY);
+
+            ctx.lineTo(currentX, targetY);
+            ctx.lineTo(nextX, targetY);
+        }
+        ctx.stroke(); // ТУТ ми закрили і намалювали синю лінію без завад!
+
+        // ==========================================
+        // 3. НАНЕСЕННЯ ТЕКСТУ ТА ЗАСІЧОК (ОКРЕМІ ОПЕРАЦІЇ)
+        // ==========================================
         ctx.font = '14px sans-serif';
         ctx.fillStyle = '#64748b';
         ctx.textAlign = 'right';
@@ -134,79 +154,50 @@
         ctx.fillText('0.0', paddingLeft - 10, centerY);
         ctx.fillText('-1.0', paddingLeft - 10, centerY + scaleY);
 
-        // Назва графіка зверху
         ctx.fillStyle = '#1e293b';
         ctx.font = 'bold 15px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`Walsh (k = ${k}, N = ${N})`, canvas.width / 2, paddingTop - 15);
+        ctx.fillText('Walsh (k = ' + k + ', N = ' + N + ')', canvas.width / 2, paddingTop - 15);
 
-        // Підпис осі X знизу
         ctx.font = '13px sans-serif';
         ctx.fillStyle = '#64748b';
         ctx.fillText('Дискретний час (n)', canvas.width / 2, canvas.height - 15);
 
-        // 2. Побудова сходинкового графіка функції Уолша
-        const stepWidth = chartWidth / N;
-
-        ctx.strokeStyle = '#007bff';
-        ctx.lineWidth = 3;
-        ctx.lineJoin = 'miter';
-        ctx.beginPath();
-
-        // АБСОЛЮТНО БЕЗПЕЧНИЙ МЕТОД: дістаємо перший елемент через класичний метод копії .shift()
-        const firstElement = dataCopyForDrawing.shift();
-        let startY = centerY - (firstElement * scaleY);
-        ctx.moveTo(paddingLeft, startY);
-
-        // Повертаємо елемент назад, щоб цикл пройшов коректно з початку
-        dataCopyForDrawing.unshift(firstElement);
+        // Насічки та цифри для осі X
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1;
+        ctx.font = '11px sans-serif';
+        ctx.fillStyle = '#64748b';
 
         for (let i = 0; i < N; i++) {
-            const currentX = paddingLeft + (i * stepWidth);
-            const nextX = paddingLeft + ((i + 1) * stepWidth);
-            
-            // Дістаємо поточний елемент без використання квадратних дужок
-            const currentSignalValue = dataCopyForDrawing.shift();
-            const targetY = centerY - (currentSignalValue * scaleY);
-
-            // Вертикальна сходинка (якщо рівень сигналу змінився)
-            ctx.lineTo(currentX, targetY);
-            // Горизонтальна лінія поточного інтервалу
-            ctx.lineTo(nextX, targetY);
-
-            // Мітки поділок на осі X
-            if (N <= 16 || i % (N / 8) === 0 || i === N - 1) {
-                ctx.save();
-                ctx.strokeStyle = '#cbd5e1';
-                ctx.lineWidth = 1;
+            // Малюємо цифри вибірково, щоб не наповзали одна на одну
+            if (N <= 16 || i % (N / 8) === 0) {
+                const currentX = paddingLeft + (i * stepWidth);
+                
                 ctx.beginPath();
                 ctx.moveTo(currentX, centerY);
                 ctx.lineTo(currentX, centerY + 5);
                 ctx.stroke();
 
-                ctx.fillStyle = '#64748b';
-                ctx.font = '11px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(i.toString(), currentX, centerY + 20);
-                ctx.restore();
             }
         }
         
-        // Малюємо останню насічку на кінці осі X
-        ctx.strokeStyle = '#cbd5e1';
+        // Остання насічка для значення N (фінал осі)
+        const finalX = paddingLeft + chartWidth;
         ctx.beginPath();
-        ctx.moveTo(paddingLeft + chartWidth, centerY);
-        ctx.lineTo(paddingLeft + chartWidth, centerY + 5);
+        ctx.moveTo(finalX, centerY);
+        ctx.lineTo(finalX, centerY + 5);
         ctx.stroke();
-        ctx.fillText(N.toString(), paddingLeft + chartWidth, centerY + 20);
-
-        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText(N.toString(), finalX, centerY + 20);
     }
 
     orderInput.addEventListener('input', drawChart);
     indexInput.addEventListener('input', drawChart);
 
-    // Первинне малювання
+    // Перший запуск малювання
     drawChart();
 </script>
 
